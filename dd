@@ -1,0 +1,142 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SobraBoa - Compartilhe Alimentos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>SobraBoa</h1>
+    <p>Compartilhe sobras de comida com quem precisa</p>
+  </header>
+  <main>
+    <form id="form">
+      <input type="text" id="nome" placeholder="Nome do alimento" required>
+      <textarea id="descricao" placeholder="Descrição (ex: arroz, pronto, vence amanhã)" required></textarea>
+      <input type="text" id="local" placeholder="Local (bairro ou rua)" required>
+      <button type="submit">Compartilhar alimento</button>
+    </form>
+
+    <div class="listagem" id="listagem"></div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+/* style.css */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f7f7f7;
+}
+header {
+  background-color: #4CAF50;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+main {
+  padding: 2rem;
+}
+form {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  max-width: 500px;
+  margin: auto;
+}
+input, textarea, button {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #45a049;
+}
+.listagem {
+  margin-top: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.item {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 5px rgba(0,0,0,0.05);
+}
+
+// script.js
+const form = document.getElementById('form');
+const listagem = document.getElementById('listagem');
+
+function salvarLocalStorage(dados) {
+  localStorage.setItem('ofertas', JSON.stringify(dados));
+}
+
+function carregarLocalStorage() {
+  const data = localStorage.getItem('ofertas');
+  return data ? JSON.parse(data) : [];
+}
+
+function renderizarOfertas() {
+  const ofertas = carregarLocalStorage();
+  listagem.innerHTML = '';
+  ofertas.reverse().forEach(({ nome, descricao, local, latitude, longitude }) => {
+    const item = document.createElement('div');
+    item.classList.add('item');
+    item.innerHTML = `<h3>${nome}</h3><p>${descricao}</p><p><strong>Local:</strong> ${local}</p>`;
+    if (latitude && longitude) {
+      const mapaLink = document.createElement('a');
+      mapaLink.href = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      mapaLink.target = '_blank';
+      mapaLink.innerText = 'Ver no mapa';
+      item.appendChild(mapaLink);
+    }
+    listagem.appendChild(item);
+  });
+}
+
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const nome = document.getElementById('nome').value;
+  const descricao = document.getElementById('descricao').value;
+  const local = document.getElementById('local').value;
+
+  if (!navigator.geolocation) {
+    alert('Geolocalização não suportada pelo navegador.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(function(posicao) {
+    const latitude = posicao.coords.latitude;
+    const longitude = posicao.coords.longitude;
+
+    const novaOferta = { nome, descricao, local, latitude, longitude };
+    const ofertas = carregarLocalStorage();
+    ofertas.push(novaOferta);
+    salvarLocalStorage(ofertas);
+    renderizarOfertas();
+    form.reset();
+  }, function() {
+    alert('Não foi possível obter sua localização.');
+  });
+});
+
+document.addEventListener('DOMContentLoaded', renderizarOfertas);
